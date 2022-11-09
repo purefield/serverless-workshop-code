@@ -13,13 +13,13 @@ lifeline_url = os.getenv("LIFELINE_URL")
 
 # Load the vectorizer and model from S3
 # Disable S3 multi threading to prevent gunicorn worker deadlock
-if endpoint_url:
-    s3 = boto3.resource('s3', endpoint_url=endpoint_url)
-else:
-    s3 = boto3.resource('s3')
-s3.Bucket(bucket_name).download_file(model_file_name, model_file_name, Config=TransferConfig(use_threads=False))
-with open(model_file_name, 'rb') as f:
-    cv, clf = pickle.load(f)
+# if endpoint_url:
+#     s3 = boto3.resource('s3', endpoint_url=endpoint_url)
+# else:
+#     s3 = boto3.resource('s3')
+# s3.Bucket(bucket_name).download_file(model_file_name, model_file_name, Config=TransferConfig(use_threads=False))
+# with open(model_file_name, 'rb') as f:
+#     cv, clf = pickle.load(f)
 
 @application.route('/predict', methods=['POST'])
 def predict():
@@ -30,13 +30,14 @@ def predict():
         if text is None:
             abort(400)
 
-        prediction = clf.predict(cv.transform([text]))[0]      # Do not use .fit_transform() here
+        #prediction = clf.predict(cv.transform([text]))[0]      # Do not use .fit_transform() here
+        prediction = "flooding" in text
         
         # Construct TwiML response
         resp = MessagingResponse()
 
         if lifeline_url:
-            resp.message("Please click on this link: " + lifeline_url if prediction == 1 else "Please send more information")
+            resp.message("Please click on this link: " + lifeline_url if prediction is True else "Please send more information")
         else:
-            resp.message("This is a disaster!" if prediction == 1 else "No disaster")
+            resp.message("This is a disaster!" if prediction is True else "No disaster")
         return str(resp)
